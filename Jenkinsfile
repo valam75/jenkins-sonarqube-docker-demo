@@ -5,13 +5,11 @@ pipeline {
         DOCKER_IMAGE = "valam75/sonarqube"
     }
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/valam75/jenkins-sonarqube-docker-demo.git'
-            }
-        }
+stage('Checkout') {
+    steps {
+        git branch: 'main', url: 'https://github.com/valam75/jenkins-sonarqube-docker-demo.git'
+    }
+}
 
         stage('Build') {
             steps {
