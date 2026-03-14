@@ -15,26 +15,27 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'pip install -r requirements.txt'
+                bat 'python -m pip install --upgrade pip'
+                bat 'python -m pip install -r requirements.txt'
             }
         }
 
         stage('Test') {
             steps {
-                bat 'pytest'
+                bat 'python -m pytest'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarserver') {
-                    bat """
+                    bat '''
                     sonar-scanner ^
                     -Dsonar.projectKey=demo ^
                     -Dsonar.sources=. ^
                     -Dsonar.host.url=http://34.227.173.238:9000 ^
                     -Dsonar.login=YOUR_TOKEN
-                    """
+                    '''
                 }
             }
         }
@@ -51,10 +52,10 @@ pipeline {
                 usernameVariable: 'USER',
                 passwordVariable: 'PASS')]) {
 
-                    bat """
+                    bat '''
                     echo %PASS% | docker login -u %USER% --password-stdin
                     docker push %DOCKER_IMAGE%
-                    """
+                    '''
                 }
             }
         }
