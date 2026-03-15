@@ -1,11 +1,9 @@
 pipeline {
     agent any
-
     environment {
         DOCKER_IMAGE = "valam75/sonarqube:latest"
     }
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/valam75/jenkins-sonarqube-docker-demo.git'
@@ -15,10 +13,10 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                python3 -m venv venv
-                . venv/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
                 '''
             }
         }
@@ -26,29 +24,31 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                . venv/bin/activate
-                pytest --cov=. --cov-report=xml
+                    . venv/bin/activate
+                    pytest --cov=. --cov-report=xml:coverage.xml
                 '''
             }
         }
 
         stage('SonarQube Analysis') {
-    steps {
-        script {
-            def scannerHome = tool 'sonar-scanner'
-            withSonarQubeEnv('sonarserver') {
-                sh """
-                ${scannerHome}/bin/sonar-scanner \
--Dsonar.projectKey=demo \
--Dsonar.sources=. \
--Dsonar.exclusions=venv/** \
--Dsonar.python.coverage.reportPaths=coverage.xml \
--Dsonar.host.url=http://184.72.110.102:9000
-                """
+            steps {
+                script {
+                    def scannerHome = tool 'sonar-scanner'
+                    withSonarQubeEnv('sonarserver') {
+                        sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                                -Dsonar.projectKey=demo \
+                                -Dsonar.sources=. \
+                                -Dsonar.exclusions=venv/**,**/__pycache__/**,**/*.pyc \
+                                -Dsonar.python.coverage.reportPaths=coverage.xml \
+                                -Dsonar.host.url=http://184.72.110.102:9000 \
+                                -Dsonar.language=py \
+                                -Dsonar.sourceEncoding=UTF-8
+                        """
+                    }
+                }
             }
         }
-    }
-}
 
         stage('Quality Gate') {
             steps {
@@ -60,19 +60,20 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
+                sh 'docker build -t ${DOCKER_IMAGE} .'
             }
         }
 
         stage('Docker Push') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'Dockerlogin',
-                usernameVariable: 'USER',
-                passwordVariable: 'PASS')]) {
-
+                withCredentials([usernamePassword(
+                    credentialsId: 'Dockerlogin',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
+                )]) {
                     sh '''
-                    echo $PASS | docker login -u $USER --password-stdin
-                    docker push $DOCKER_IMAGE
+                        echo "$PASS" | docker login -u "$USER" --password-stdin
+                        docker push ${DOCKER_IMAGE}
                     '''
                 }
             }
@@ -81,12 +82,24 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 sh '''
-                docker stop demo-container || true
-                docker rm demo-container || true
-                docker run -d -p 5000:5000 --name demo-container $DOCKER_IMAGE
+                    docker stop demo-container || true
+                    docker rm demo-container || true
+                    docker pull ${DOCKER_IMAGE}
+                    docker run -d -p 5000:5000 --name demo-container ${DOCKER_IMAGE}
                 '''
             }
         }
+    }
 
+    post {
+        always {
+            cleanWs()
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+        success {
+            echo 'Pipeline succeeded!'
+        }
     }
 }
