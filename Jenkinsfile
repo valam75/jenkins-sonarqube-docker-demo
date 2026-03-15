@@ -43,7 +43,8 @@ pipeline {
             sh '''
             sonar-scanner \
             -Dsonar.projectKey=demo \
-            -Dsonar.sources=.
+            -Dsonar.sources=. \
+            -Dsonar.host.url=http://184.72.110.102:9000
             '''
         }
     }
