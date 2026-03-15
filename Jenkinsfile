@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "valam75/sonarqube"
+        DOCKER_IMAGE = "valam75/sonarqube:latest"
     }
 
     stages {
@@ -15,26 +15,26 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'python -m pip install --upgrade pip'
-                bat 'python -m pip install -r requirements.txt'
+                sh 'python3 -m pip install --upgrade pip'
+                sh 'pip3 install -r requirements.txt'
             }
         }
 
         stage('Test') {
             steps {
-                bat 'python -m pytest'
+                sh 'pytest'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarserver') {
-                    bat '''
-                    sonar-scanner ^
-                    -Dsonar.projectKey=demo ^
-                    -Dsonar.sources=. ^
-                    -Dsonar.host.url=http://34.227.173.238:9000 ^
-                    -Dsonar.login=YOUR_TOKEN
+                    sh '''
+                    sonar-scanner \
+                    -Dsonar.projectKey=demo \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://34.227.173.238:9000 \
+                    -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
@@ -42,7 +42,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                bat 'docker build -t %DOCKER_IMAGE% .'
+                sh 'docker build -t $DOCKER_IMAGE .'
             }
         }
 
@@ -52,9 +52,9 @@ pipeline {
                 usernameVariable: 'USER',
                 passwordVariable: 'PASS')]) {
 
-                    bat '''
-                    echo %PASS% | docker login -u %USER% --password-stdin
-                    docker push %DOCKER_IMAGE%
+                    sh '''
+                    echo $PASS | docker login -u $USER --password-stdin
+                    docker push $DOCKER_IMAGE
                     '''
                 }
             }
@@ -62,7 +62,11 @@ pipeline {
 
         stage('Deploy Container') {
             steps {
-                bat 'docker run -d -p 5000:5000 %DOCKER_IMAGE%'
+                sh '''
+                docker stop demo-container || true
+                docker rm demo-container || true
+                docker run -d -p 5000:5000 --name demo-container $DOCKER_IMAGE
+                '''
             }
         }
 
