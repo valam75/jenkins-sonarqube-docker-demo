@@ -1,10 +1,13 @@
-from flask import Flask
+import pytest
+from app import app
 
-app = Flask(__name__)
+@pytest.fixture
+def client():
+    app.testing = True
+    with app.test_client() as client:
+        yield client
 
-@app.route("/")
-def home():
-    return "Hello from Jenkins CI/CD!"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+def test_home(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"Hello from Jenkins CI/CD!" in response.data
