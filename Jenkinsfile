@@ -27,7 +27,7 @@ pipeline {
             steps {
                 sh '''
                 . venv/bin/activate
-                pytest
+                pytest --cov=. --cov-report=xml
                 '''
             }
         }
@@ -39,10 +39,11 @@ pipeline {
             withSonarQubeEnv('sonarserver') {
                 sh """
                 ${scannerHome}/bin/sonar-scanner \
-                 -Dsonar.projectKey=demo \
-                -Dsonar.sources=. \
-                -Dsonar.exclusions=venv/** \
-                -Dsonar.host.url=http://184.72.110.102:9000
+-Dsonar.projectKey=demo \
+-Dsonar.sources=. \
+-Dsonar.exclusions=venv/** \
+-Dsonar.python.coverage.reportPaths=coverage.xml \
+-Dsonar.host.url=http://184.72.110.102:9000
                 """
             }
         }
