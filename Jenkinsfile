@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        sonarQubeScanner 'sonar-scanner'
+    }
+
     environment {
         DOCKER_IMAGE = "valam75/sonarqube:latest"
     }
@@ -34,18 +38,16 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarserver') {
-                    sh '''
-                    sonar-scanner \
-                    -Dsonar.projectKey=demo \
-                    -Dsonar.sources=. \
-                    -Dsonar.host.url=http://34.227.173.238:9000 \
-                    -Dsonar.login=$SONAR_AUTH_TOKEN
-                    '''
-                }
-            }
+    steps {
+        withSonarQubeEnv('sonarserver') {
+            sh '''
+            sonar-scanner \
+            -Dsonar.projectKey=demo \
+            -Dsonar.sources=.
+            '''
         }
+    }
+}
 
         stage('Quality Gate') {
             steps {
