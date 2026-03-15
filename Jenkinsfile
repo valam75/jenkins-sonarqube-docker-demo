@@ -1,14 +1,9 @@
 pipeline {
     agent any
 
-    tools {
-        sonar 'sonar-scanner'
-    }
-
     environment {
         DOCKER_IMAGE = "valam75/sonarqube:latest"
     }
-
     stages {
 
         stage('Checkout') {
@@ -39,13 +34,16 @@ pipeline {
 
         stage('SonarQube Analysis') {
     steps {
-        withSonarQubeEnv('sonarserver') {
-            sh '''
-            sonar-scanner \
-            -Dsonar.projectKey=demo \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=http://184.72.110.102:9000
-            '''
+        script {
+            def scannerHome = tool 'sonar-scanner'
+            withSonarQubeEnv('sonarserver') {
+                sh """
+                ${scannerHome}/bin/sonar-scanner \
+                -Dsonar.projectKey=demo \
+                -Dsonar.sources=. \
+                -Dsonar.host.url=http://184.72.110.102:9000
+                """
+            }
         }
     }
 }
