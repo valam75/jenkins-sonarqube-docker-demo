@@ -15,14 +15,21 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'python3 -m pip install --upgrade pip'
-                sh 'pip3 install -r requirements.txt'
+                sh '''
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                '''
             }
         }
 
         stage('Test') {
             steps {
-                sh 'pytest'
+                sh '''
+                . venv/bin/activate
+                pytest
+                '''
             }
         }
 
@@ -36,6 +43,14 @@ pipeline {
                     -Dsonar.host.url=http://34.227.173.238:9000 \
                     -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
